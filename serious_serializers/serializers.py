@@ -6,6 +6,7 @@ import yaml
 import typing
 
 from collections import OrderedDict
+from typing import Dict
 
 
 class SlotsSerializer:
@@ -47,7 +48,7 @@ class SlotsSerializer:
 
         yaml.SafeDumper.add_representer(cls, represent_yaml)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> OrderedDict:
         """Convert to ordered dict."""
         return OrderedDict([(k, getattr(self, k)) for k in self.__slots__])
 
@@ -83,10 +84,10 @@ class SlotsSerializer:
         raise TypeError(f"Cannot load {cls.__name__} from {dump}")
 
     @classmethod
-    def from_yaml_file(cls, path) -> Serializer:
+    def from_yaml_file(cls, path) -> Self:
         with open(path, "r") as f:
             return cls.from_yaml(f.read())
 
     @classmethod
-    def show_tag(cls, subclass) -> Serializer:
+    def show_tag(cls, subclass) -> Self:
         subclass._show_tag = True

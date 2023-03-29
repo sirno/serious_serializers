@@ -1,7 +1,11 @@
-# Serious Serializer
+# Serious Serializers
 
-Simple class mixin to add YAML serialization to dataclass objects that use
-slots.
+Simple class mixin to add YAML serialization and deserialization to dataclass
+objects that use slots.
+
+## Examples
+
+To add serialization to dataclass object:
 
 ```python
 from serious_serializers import SlotsSerializer
@@ -12,7 +16,7 @@ class Data(SlotsSerializer):
     data: List[float]
 ```
 
-To represent the class tag:
+To represent the class tag as `!Data`:
 
 ```python
 from serious_serializers import SlotsSerializer
