@@ -1,5 +1,7 @@
 # Serious Serializers
 
+![tests](https://github.com/sirno/serious_serializers/actions/workflows/tests.yml/badge.svg)
+
 Simple class mixin to add YAML serialization and deserialization to dataclass
 objects that use slots.
 
