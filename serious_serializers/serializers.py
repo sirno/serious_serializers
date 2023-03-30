@@ -22,16 +22,15 @@ class SlotsSerializer:
             for key_node, value_node in node.value:
                 key = loader.construct_object(key_node, deep=False)
                 value_type = type_hints[key]
-                print(value_type)
                 value = (
-                    value_type._construct_yaml(loader, value_node)
+                    value_type.__construct_yaml(loader, value_node)
                     if issubclass(value_type, SlotsSerializer)
                     else loader.construct_object(value_node)
                 )
                 mapping[key] = value
             return cls(**mapping)
 
-        cls._construct_yaml = construct_yaml
+        cls.__construct_yaml = construct_yaml
         yaml.SafeLoader.add_constructor(f"!{cls.__name__}", construct_yaml)
 
         # Add representer to the yaml encoder
@@ -50,9 +49,20 @@ class SlotsSerializer:
 
         yaml.SafeDumper.add_representer(cls, represent_yaml)
 
-    def to_dict(self) -> OrderedDict:
+    def __items(self) -> typing.Iterator[typing.Tuple[str, typing.Any]]:
+        for k in self.__slots__:
+            yield k, getattr(self, k)
+
+    def to_dict(self, recursive=False) -> OrderedDict:
         """Convert to ordered dict."""
-        return OrderedDict([(k, getattr(self, k)) for k in self.__slots__])
+        if not recursive:
+            return OrderedDict(self.__items())
+
+        type_hints = typing.get_type_hints(self)
+        return OrderedDict(
+            (k, v.to_dict() if issubclass(type_hints[k], SlotsSerializer) else v)
+            for k, v in self.__items()
+        )
 
     def to_yaml(self) -> str:
         """Convert to yaml string."""
@@ -68,10 +78,20 @@ class SlotsSerializer:
 
     @classmethod
     def from_dict(cls, data: Dict) -> Self:
-        return cls(**data)
+        """Convert from dict."""
+        type_hints = typing.get_type_hints(cls)
+        return cls(
+            **{
+                k: type_hints[k].from_dict(v)
+                if issubclass(type_hints[k], SlotsSerializer)
+                else v
+                for k, v in data.items()
+            }
+        )
 
     @classmethod
     def from_yaml(cls, yaml_string: str) -> Self:
+        """Convert from yaml string."""
         if not yaml_string.startswith(f"!{cls.__name__}"):
             yaml_string = f"!{cls.__name__}\n{yaml_string}"
 
@@ -87,9 +107,11 @@ class SlotsSerializer:
 
     @classmethod
     def from_yaml_file(cls, path) -> Self:
+        """Read from yaml file."""
         with open(path, "r") as f:
             return cls.from_yaml(f.read())
 
     @classmethod
     def show_tag(cls, subclass) -> Self:
+        """Show tag in yaml output."""
         subclass._show_tag = True

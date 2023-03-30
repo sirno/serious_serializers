@@ -68,10 +68,16 @@ class Outer(SlotsSerializer):
 NESTED = Outer(Inner(10))
 
 
-@pytest.mark.skip(reason="Cannot transform inner levels yet.")
 def test_nested_to_dict():
     """Test `to_dict` method for nested class."""
-    nested_dict = NESTED.to_dict()
+    nested_dict = NESTED.to_dict(recursive=False)
+    assert "inner" in nested_dict
+    assert isinstance(nested_dict["inner"], Inner)
+
+
+def test_nested_to_dict_recursive():
+    """Test `to_dict` method for nested class."""
+    nested_dict = NESTED.to_dict(recursive=True)
     assert "inner" in nested_dict
     assert "value" in nested_dict["inner"]
     assert nested_dict["inner"]["value"] == 10
@@ -83,7 +89,6 @@ def test_nested_to_yaml():
     assert nested_yaml == "inner:\n  value: 10\n"
 
 
-@pytest.mark.skip(reason="Cannot transform inner levels yet.")
 def test_nested_from_dict():
     """Test `from_dict` method for nested class."""
     nested = Outer.from_dict({"inner": {"value": 10}})
