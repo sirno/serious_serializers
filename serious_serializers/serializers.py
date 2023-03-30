@@ -5,6 +5,8 @@ from __future__ import annotations
 import yaml
 import typing
 
+from typing_extensions import Self
+
 from collections import OrderedDict
 from typing import Dict
 
