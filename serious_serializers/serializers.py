@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+__all__ = ["SlotsSerializer", "SlotsLoader", "SlotsDumper"]
+
 import yaml
 import typing
 
@@ -11,12 +13,20 @@ from collections import OrderedDict
 from typing import Dict
 
 
+class SlotsLoader(yaml.SafeLoader):
+    pass
+
+
+class SlotsDumper(yaml.SafeDumper):
+    pass
+
+
 class SlotsSerializer:
     """Serialize and deserialize YAML slotted dataclasses in order."""
 
     def __init_subclass__(cls) -> None:
         # Add constructor to the yaml decoder
-        def construct_yaml(loader: yaml.SafeLoader, node: yaml.nodes.Node) -> cls:
+        def construct_yaml(loader: SlotsSerializer, node: yaml.nodes.Node) -> cls:
             type_hints = typing.get_type_hints(cls)
             mapping = {}
             for key_node, value_node in node.value:
@@ -31,12 +41,10 @@ class SlotsSerializer:
             return cls(**mapping)
 
         cls.__construct_yaml = construct_yaml
-        yaml.SafeLoader.add_constructor(f"!{cls.__name__}", construct_yaml)
+        SlotsLoader.add_constructor(f"!{cls.__name__}", construct_yaml)
 
         # Add representer to the yaml encoder
-        def represent_yaml(
-            dumper: yaml.SafeDumper, data: cls
-        ) -> yaml.nodes.MappingNode:
+        def represent_yaml(dumper: SlotsDumper, data: cls) -> yaml.nodes.MappingNode:
             representer_tag = (
                 f"!{cls.__name__}"
                 if getattr(data, "_show_tag", False)
@@ -47,7 +55,7 @@ class SlotsSerializer:
                 data.to_dict(),
             )
 
-        yaml.SafeDumper.add_representer(cls, represent_yaml)
+        SlotsDumper.add_representer(cls, represent_yaml)
 
     def __items(self) -> typing.Iterator[typing.Tuple[str, typing.Any]]:
         for k in self.__slots__:
@@ -66,7 +74,7 @@ class SlotsSerializer:
 
     def to_yaml(self) -> str:
         """Convert to yaml string."""
-        return yaml.dump(self, Dumper=yaml.SafeDumper, sort_keys=False)
+        return yaml.dump(self, Dumper=SlotsDumper, sort_keys=False)
 
     def to_yaml_file(self, path):
         """Write to yaml file."""
@@ -95,7 +103,7 @@ class SlotsSerializer:
         if not yaml_string.startswith(f"!{cls.__name__}"):
             yaml_string = f"!{cls.__name__}\n{yaml_string}"
 
-        dump = yaml.safe_load(yaml_string)
+        dump = yaml.load(yaml_string, Loader=SlotsLoader)
 
         if isinstance(dump, dict):
             return cls.from_dict(dump)
@@ -113,5 +121,5 @@ class SlotsSerializer:
 
     @classmethod
     def show_tag(cls, subclass) -> Self:
-        """Show tag in yaml output."""
+        """Decorator to show tag in yaml output."""
         subclass._show_tag = True

@@ -1,1 +1,1 @@
-from .serializers import SlotsSerializer
+from .serializers import SlotsSerializer, SlotsLoader, SlotsDumper
